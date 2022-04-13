@@ -1,24 +1,23 @@
-package models
+package generators
 
 import (
 	"embed"
 	"github.com/go-openapi/analysis"
 	"github.com/go-swagger/go-swagger/generator"
-	"github.com/wh3r3areyou/goswagg/internal/generators"
-	"github.com/wh3r3areyou/goswagg/internal/tag"
 	"path"
 )
 
-type Generator struct {
+type ModelGenerator struct {
 }
 
-func NewModelsGenerator() generators.Generator {
-	return &Generator{}
+func NewModelsGenerator() Generator {
+	return &ModelGenerator{}
 }
 
-func (m *Generator) Generate(templates *embed.FS, tag tag.Tag, dir string, file string) {
-	templates = m.ParseTemplates(templates)
-	opts := m.SetOpts(tag, dir, file)
+func (m *ModelGenerator) Generate(options GenerateOpts) {
+	tagsNames := GetTagsNames(options.tags)
+	options.template = m.parseTemplates(options.template)
+	opts := m.setOpts(tagsNames, options.dir, options.file)
 	err := opts.EnsureDefaults()
 	if err != nil {
 		panic(err)
@@ -29,7 +28,7 @@ func (m *Generator) Generate(templates *embed.FS, tag tag.Tag, dir string, file 
 	}
 }
 
-func (m *Generator) SetOpts(tag tag.Tag, dir string, file string) *generator.GenOpts {
+func (m *ModelGenerator) setOpts(tagsNames []string, dir string, file string) *generator.GenOpts {
 	return &generator.GenOpts{
 		Spec:              file,
 		Target:            dir,
@@ -59,8 +58,8 @@ func (m *Generator) SetOpts(tag tag.Tag, dir string, file string) *generator.Gen
 		DumpData:          false,
 		Models:            nil,
 		Operations:        nil,
-		Tags:              []string{tag.Name},
-		Name:              tag.Name,
+		Tags:              tagsNames,
+		Name:              "models",
 		FlagStrategy:      "go-flags",
 		CompatibilityMode: "modern",
 		ExistingModels:    "",
@@ -80,7 +79,7 @@ func (m *Generator) SetOpts(tag tag.Tag, dir string, file string) *generator.Gen
 	}
 }
 
-func (m *Generator) ParseTemplates(templates *embed.FS) *embed.FS {
+func (m *ModelGenerator) parseTemplates(templates *embed.FS) *embed.FS {
 	assets, err := templates.ReadDir("swagger-templates/templates/models")
 	if err != nil {
 		panic(err)

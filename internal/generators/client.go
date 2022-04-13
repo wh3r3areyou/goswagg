@@ -1,35 +1,36 @@
-package client
+package generators
 
 import (
 	"embed"
 	"github.com/go-openapi/analysis"
 	"github.com/go-swagger/go-swagger/generator"
-	"github.com/wh3r3areyou/goswagg/internal/generators"
-	"github.com/wh3r3areyou/goswagg/internal/tag"
 	"path"
 )
 
-type Generator struct {
+type ClientGenerator struct {
 }
 
-func NewClientGenerator() generators.Generator {
-	return &Generator{}
+func NewClientGenerator() Generator {
+	return &ClientGenerator{}
 }
 
-func (m *Generator) Generate(templates *embed.FS, tag tag.Tag, dir string, file string) {
-	templates = m.ParseTemplates(templates)
-	opts := m.SetOpts(tag, dir, file)
-	err := opts.EnsureDefaults()
-	if err != nil {
-		panic(err)
+func (c *ClientGenerator) Generate(options GenerateOpts) {
+	for _, tag := range options.tags {
+		tagsNames := GetTagsNames(options.tags)
+		options.template = c.parseTemplates(options.template)
+		opts := c.setOpts(tagsNames, options.dir, options.file)
+		err := opts.EnsureDefaults()
+		if err != nil {
+			panic(err)
+		}
+		err = generator.GenerateClient(tag.Name, nil, nil, opts)
+		if err != nil {
+			panic(err)
+		}
 	}
-	err = generator.GenerateClient(tag.Name, nil, nil, opts)
-	if err != nil {
-		panic(err)
-	}
 }
 
-func (m *Generator) SetOpts(tag tag.Tag, dir string, file string) *generator.GenOpts {
+func (c *ClientGenerator) setOpts(tagsNames []string, dir string, file string) *generator.GenOpts {
 	return &generator.GenOpts{
 		Spec:              file,
 		Target:            dir,
@@ -59,8 +60,8 @@ func (m *Generator) SetOpts(tag tag.Tag, dir string, file string) *generator.Gen
 		DumpData:          false,
 		Models:            nil,
 		Operations:        nil,
-		Tags:              []string{tag.Name},
-		Name:              tag.Name,
+		Tags:              tagsNames,
+		Name:              tagsNames[0],
 		FlagStrategy:      "go-flags",
 		CompatibilityMode: "modern",
 		ExistingModels:    "",
@@ -124,7 +125,7 @@ func (m *Generator) SetOpts(tag tag.Tag, dir string, file string) *generator.Gen
 	}
 }
 
-func (m *Generator) ParseTemplates(templates *embed.FS) *embed.FS {
+func (c *ClientGenerator) parseTemplates(templates *embed.FS) *embed.FS {
 	assets, err := templates.ReadDir("swagger-templates/templates/client")
 	if err != nil {
 		panic(err)

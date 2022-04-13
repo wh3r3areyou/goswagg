@@ -5,11 +5,8 @@ import (
 	_ "embed"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/wh3r3areyou/goswagg/internal/generators/client"
-	"github.com/wh3r3areyou/goswagg/internal/generators/models"
-	"github.com/wh3r3areyou/goswagg/internal/generators/server"
+	"github.com/wh3r3areyou/goswagg/internal/generators"
 	"github.com/wh3r3areyou/goswagg/internal/tag"
-	"github.com/wh3r3areyou/goswagg/internal/tools"
 	"log"
 	"path/filepath"
 )
@@ -71,17 +68,7 @@ func getSwagger(dir string, file string) {
 // makeApp Generate application from swagger.yaml
 func makeApp(pathFile string) {
 	dir, file := getFileAndDir(pathFile)
-
 	getSwagger(dir, file)
-
 	tags := tag.GetTags()
-
-	models.NewModelsGenerator().Generate(&templates, tag.Tag{}, dir, file)
-
-	for _, tag := range tags {
-		client.NewClientGenerator().Generate(&templates, tag, dir, file)
-	}
-	server.NewServerGenerator().Generate(&templates, tags[0], dir, file)
-
-	tools.MakeTools(dir)
+	generators.Run(&templates, tags, dir, file)
 }

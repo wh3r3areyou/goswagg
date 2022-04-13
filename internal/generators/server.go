@@ -1,35 +1,34 @@
-package server
+package generators
 
 import (
 	"embed"
 	"github.com/go-openapi/analysis"
 	"github.com/go-swagger/go-swagger/generator"
-	"github.com/wh3r3areyou/goswagg/internal/generators"
-	"github.com/wh3r3areyou/goswagg/internal/tag"
 	"path"
 )
 
-type Generator struct {
+type ServerGenerator struct {
 }
 
-func NewServerGenerator() generators.Generator {
-	return &Generator{}
+func NewServerGenerator() Generator {
+	return &ServerGenerator{}
 }
 
-func (m *Generator) Generate(templates *embed.FS, tag tag.Tag, dir string, file string) {
-	templates = m.ParseTemplates(templates)
-	opts := m.SetOpts(tag, dir, file)
+func (s *ServerGenerator) Generate(options GenerateOpts) {
+	tagsNames := GetTagsNames(options.tags)
+	options.template = s.parseTemplates(options.template)
+	opts := s.setOpts(tagsNames, options.dir, options.file)
 	err := opts.EnsureDefaults()
 	if err != nil {
 		panic(err)
 	}
-	err = generator.GenerateClient("", nil, nil, opts)
+	err = generator.GenerateServer("", nil, nil, opts)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (m *Generator) SetOpts(tag tag.Tag, dir string, file string) *generator.GenOpts {
+func (s *ServerGenerator) setOpts(tagsNames []string, dir string, file string) *generator.GenOpts {
 	return &generator.GenOpts{
 		Spec:              file,
 		Target:            dir,
@@ -59,8 +58,8 @@ func (m *Generator) SetOpts(tag tag.Tag, dir string, file string) *generator.Gen
 		DumpData:          false,
 		Models:            nil,
 		Operations:        nil,
-		Tags:              []string{tag.Name},
-		Name:              tag.Name,
+		Tags:              tagsNames,
+		Name:              "api",
 		FlagStrategy:      "go-flags",
 		CompatibilityMode: "modern",
 		ExistingModels:    "",
@@ -138,7 +137,7 @@ func (m *Generator) SetOpts(tag tag.Tag, dir string, file string) *generator.Gen
 	}
 }
 
-func (m *Generator) ParseTemplates(templates *embed.FS) *embed.FS {
+func (s *ServerGenerator) parseTemplates(templates *embed.FS) *embed.FS {
 	assets, err := templates.ReadDir("swagger-templates/templates/server")
 	if err != nil {
 		panic(err)
